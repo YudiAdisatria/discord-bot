@@ -1,0 +1,105 @@
+const Discord = require('discord.js');
+const bot = new Discord.Client();
+
+//Bot Token
+const token = 'NzQxOTQyOTIwMzEwOTQ3OTAx.Xy-6MA.hOn2kp-bl6SuWZTnNppIIKwvJ_U';
+
+//Set prefix
+const prefix ='/';
+//set Version number
+//var version = '1.0.1'; move to version.js
+
+//seperate files commands
+const fs = require('fs');
+bot.commands = new Discord.Collection();
+
+const commandFiles = fs.readFileSync('./commands').filter(file => file.endwith('.js'));
+for(const file of commandFiles){
+	const command = require(`./commands/${file}`);
+
+	bot.commands.set(command.name, command);
+}
+
+
+//Console notification
+bot.on('ready', () =>{
+	console.log('Bot is ONLINE!');
+	bot.user.setActivity('Online !', {type: 'WATCHING'})
+	.catch(console.error);
+})
+
+//Welcome member
+bot.on('guildMemberAdd', member => {
+
+	const channel = member.guild.channels.cache.find(channel => channel.name === "welcome");
+	if(!channel)
+		return;
+	
+	channel.send(`Welcome to our server, ${member}`)
+
+})
+
+//bot message
+bot.on('message', message=>{
+	if(!message.content.startsWith(prefix) || message.author.bot) return;
+
+	//Split Prefix
+	const args= message.content.slice(prefix.length).split(/ +/);
+	//const command = args.shift().toLowerCase(); if we use if else
+
+	switch(args[0]){
+		case 'ping':
+			bot.commands.get('ping').execute(message, args)
+							//ping from "name: 'ping'"" on ping.js
+		break;
+		case 'say':
+			const user = message.author;
+			message.channel.send('Hello, ' + `${user}`)
+		break;
+		case 'version':
+			bot.commands.get('version').execute(message, args)
+		break;
+		case 'author':
+			bot.commands.get('author').execute(message, args)
+		break;
+		case 'clear':
+			bot.commands.get('clear').execute(message, args)
+		break;
+	}
+	
+	/*if(command === 'say'){
+		const user = message.author;
+		message.channel.send('Hello, ' + `${user}`)
+	}
+	if(command === 'version'){
+		message.channel.send('Version : ' + version)
+	}	
+	if(command === 'author'){
+		message.channel.send('Bot by : LightTundra||YukiKredo')
+	}
+	//clear chat
+	if(command === 'clear'){
+		if(!args[1]) return message.reply('Please gives second argument')
+		message.channel.bulkDelete(args[1]);
+	}
+	//Embed Identity
+	if(command === 'embed'){
+		const embed = new Discord.MessageEmbed()
+		.setTitle('Player Information')
+		.addField('Name', message.author.username)
+		.addField('Date Join', message.guild.joinedAt)
+		.setColor(0xF1C40F)
+		.setThumbnail(message.author.avatarURL)
+		.setFooter('BotBotAn Bot')
+		message.channel.send(embed)
+	}
+	if(command === 'avatar'){
+
+		//message.channel.send(message.member.nickname)
+	}*/
+})
+
+/*directory to folder
+node .
+*/
+bot.login(token);

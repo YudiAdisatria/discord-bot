@@ -1,0 +1,96 @@
+const Discord = require('discord.js');
+const bot = new Discord.Client({ partials: ["MESSAGE", "CHANNEL", "REACTION" ]});
+
+//member counter
+const memberCounter = require('./counters/member-counter');
+
+//Bot Token
+const token = 'NzQxOTQyOTIwMzEwOTQ3OTAx.Xy-6MA.hOn2kp-bl6SuWZTnNppIIKwvJ_U';
+
+//Set prefix
+const prefix ='/';
+
+//set Version number
+var version = '1.0.2';
+
+//seperate files commands
+const fs = require('fs');
+bot.commands = new Discord.Collection();
+
+const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
+for(const file of commandFiles){
+	const command = require(`./commands/${file}`);
+
+	bot.commands.set(command.name, command);
+}
+
+//Console notification
+bot.on('ready', () =>{
+	console.log('Bot is ONLINE!');
+	bot.user.setActivity('Online !', {type: 'WATCHING'})
+	.catch(console.error)
+	memberCounter(bot);
+})
+
+//Welcome member
+bot.on('guildMemberAdd', member => {
+
+	const channel = member.guild.channels.cache.find(channel => channel.name === "welcome");
+	if(!channel)
+		return;
+	
+	channel.send(`Welcome to our server, ${member}`)
+
+})
+
+//bot message
+bot.on('message', message=>{
+	if(!message.content.startsWith(prefix) || message.author.bot) return;
+
+	//Split Prefix
+	const args= message.content.slice(prefix.length).split(/ +/);
+	//const command = args.shift().toLowerCase(); if we use if else
+
+	switch(args[0].toLowerCase()){ //command become lower case
+		case 'ping':
+			bot.commands.get('ping').execute(message, args)
+							//ping from "name: 'ping'"" on ping.js
+		break;
+		case 'list':
+			bot.commands.get('list').execute(message, args)
+		break;
+		case 'say':
+			const user = message.author;
+			message.channel.send('Hello, ' + `${user}`)
+		break;
+		case 'version':
+			//Role Restriction command
+			if(!message.member.hasPermission('DEAFEN_MEMBERS'))
+				return message.reply("You don't have permission")
+			else
+				message.channel.send('Version : '+ version);
+		break;
+		case 'author':
+			bot.commands.get('author').execute(message, args)
+		break;
+		case 'clear':
+			bot.commands.get('clear').execute(message, args)
+		break;
+		case 'minfo':
+			bot.commands.get('minfo').execute(message, args, Discord) //Discord from line 1
+		break;
+		case 'reactionrole':
+			if(!args[1] || !args[4]){
+				message.reply("/reactionrole firstRole secondRole firstEmoji secondEmoji");
+			}else{
+				bot.commands.get('reactionrole').execute(message, args, Discord, bot);
+			}
+		break;
+	}
+
+})
+
+/*directory to folder
+node .
+*/
+bot.login(token);

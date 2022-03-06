@@ -1,0 +1,70 @@
+// npm install @discordjs/opus ffmpeg-static yt-search ytdl-core
+const ytdl = require('ytdl-core');
+const ytSearch = require('yt-search');
+const { Util } = require('discord.js');
+ 
+module.exports = {
+    name: 'play',
+    aliases : ['p', 'pl'],
+    cooldown : 10,
+    description: 'Joins and plays a video from youtube',
+    async execute(message, args, Discord, bot, cmd) {
+        const voiceChannel = message.member.voice.channel;
+ 
+        if (!voiceChannel) 
+            return message.reply('You have to be in voice channel');
+
+        const permissions = voiceChannel.permissionsFor(message.client.user);
+        if (!permissions.has('CONNECT') || !permissions.has('SPEAK')) 
+            return message.reply('Your voice channel don\'t have Connect or Speak permission');
+        
+        if (!args.length) 
+            return message.reply('You need to send the second argument!');
+ 
+        const validURL = (str) =>{
+            var regex = /(http|https):\/\/(\w+:{0,1}\w*)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%!\-\/]))?/;
+            if(!regex.test(str)){
+                return false;
+            } else {
+                return true;
+            }
+        }
+ 
+        //URL youtube
+        if(validURL(args[0])){
+            const  connection = await voiceChannel.join();
+            const stream  = ytdl(args[0], {filter: 'audioonly'});
+ 
+            connection.play(stream, {seek: 0, volume: 1})
+            .on('finish', () =>{
+                voiceChannel.leave();
+                message.channel.send('leaving channel');
+            });
+ 
+            await message.reply(`:thumbsup: Now Playing ***Your Link!***`)
+ 
+            return
+        }
+ 
+        //connect to voiceChannel
+        const  connection = await voiceChannel.join();
+        const videoFinder = async (query) => {
+            const videoResult = await ytSearch(query);
+            return (videoResult.videos.length > 1) ? videoResult.videos[0] : null;
+        }
+ 
+        const video = await videoFinder(args.join(' '));
+        if(video){
+            const stream  = ytdl(video.url, {filter: 'audioonly'});
+            connection.play(stream, {seek: 0, volume: 1})
+            .on('finish', () =>{
+                voiceChannel.leave();
+            });
+            
+            let reply = ':thumbsup: Now Playing ```css\n' + `${video.title}` + '```';
+            await message.reply(reply);
+        } else {
+            message.reply('No video results found');
+        }
+    }
+}
